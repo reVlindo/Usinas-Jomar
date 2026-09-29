@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Planta - FoxESS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="layout">
+        <!-- Menu Lateral: APENAS O QUE FOI PEDIDO NO PDF -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Solar Monitor</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html">Dashboard Geral</a>
+                <a href="unidades.html" class="active">Unidades</a>
+                <a href="#">Relatórios</a>
+                <a href="configuracoes.html">Configurações</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <a href="unidades.html" class="btn btn-secondary">&larr;</a>
+                    <h1 id="plant-name" style="font-size: 1.2rem; font-weight: 500;">Usina Jomar (SN: 769W2DTF132A592)</h1>
+                </div>
+                <div>
+                    <button id="btn-sync-api" class="btn" onclick="syncFoxEssApi()" style="background: #1e3a2f; border: 1px solid #22543d; color: #4ade80; font-weight: 600; cursor: pointer; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                        <span id="sync-spinner">↻</span> <span id="sync-btn-text">SINCRONIZAR API</span>
+                    </button>
+                </div>
+            </header>
+
+            <div id="sync-feedback-banner" style="display: none; padding: 10px 16px; border-radius: 8px; margin: 12px 24px 0 24px; font-size: 13px; font-weight: 500;"></div>
+
+            <div class="content-wrapper">
+                
+                <!-- Top Cards Minimalistas -->
+                <div class="top-cards-grid">
+                    <div class="minimal-card">
+                        <div class="card-title">Geração instantânea</div>
+                        <div class="card-value" id="val-potencia">-- kW</div>
+                        <div class="card-subtitle">Potência FV (Power Generating)</div>
+                    </div>
+                    
+                    <div class="minimal-card">
+                        <div class="card-title">Tensão da rede</div>
+                        <div class="card-value" id="val-tensao">-- V</div>
+                        <div class="card-subtitle" id="sub-tensao">Aguardando dado</div>
+                    </div>
+                    
+                    <div class="minimal-card">
+                        <div class="card-title">Geração hoje</div>
+                        <div class="card-value" id="val-geracao-hoje">-- kWh</div>
+                        <div class="card-subtitle" id="sub-geracao-hoje">Today Yield (API Oficial)</div>
+                    </div>
+                    
+                    <div class="minimal-card">
+                        <div class="card-title">Status</div>
+                        <div style="margin-bottom: 8px;">
+                            <span class="status-pill offline" id="val-status">Aguardando...</span>
+                        </div>
+                        <div class="card-subtitle" id="status-sub">Sem falhas na amostra</div>
+                    </div>
+                </div>
+
+                <!-- Gráfico Card -->
+                <div class="chart-card">
+                    <h2>Histórico de geração e tensão</h2>
+                    <p>A linha de geração usa kW. A tensão aparece somente quando um valor de tensão é informado pela API.</p>
+                    
+                    <div class="chart-container">
+                        <canvas id="geracaoChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Footer Info Card -->
+                <div class="footer-card">
+                    <div>
+                        <h3>Última atualização</h3>
+                        <div class="timestamp" id="val-atualizacao">--/--/---- --:--</div>
+                    </div>
+                    <div class="meta-info">
+                        Total Acumulado: <strong id="meta-total-yield">-- kWh</strong> &nbsp;&middot;&nbsp; Datalogger: <strong>769W2DTF132A592</strong>
+                    </div>
+                </div>
+
+                <!-- Área de Diagnóstico Temporária (Conferência Direta com a API FoxESS) -->
+                <div class="diagnostic-card" style="background: #14171d; border: 1px solid #2d3748; border-radius: 12px; padding: 18px 24px; margin-top: 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #232a36; padding-bottom: 8px;">
+                        <span style="font-weight: 700; font-size: 13.5px; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+                            <span>🔍</span> ÁREA DE DIAGNÓSTICO TÉCNICO (CONFERÊNCIA DIRETA API FOXESS)
+                        </span>
+                        <span style="font-size: 11.5px; color: #94a3b8;">Fuso Horário: Brasília (-03:00)</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; font-size: 13px;">
+                        <div>
+                            <div style="color: #64748b; font-size: 11.5px;">Datalogger:</div>
+                            <strong id="diag-datalogger" style="color: #fff;">769W2DTF132A592</strong>
+                        </div>
+                        <div>
+                            <div style="color: #64748b; font-size: 11.5px;">Plant ID:</div>
+                            <strong id="diag-plantid" style="color: #fff;">Aguardando API</strong>
+                        </div>
+                        <div>
+                            <div style="color: #64748b; font-size: 11.5px;">Power Generating:</div>
+                            <strong id="diag-power" style="color: #4ade80;">—</strong>
+                        </div>
+                        <div>
+                            <div style="color: #64748b; font-size: 11.5px;">Today Yield:</div>
+                            <strong id="diag-today" style="color: #38bdf8;">—</strong>
+                        </div>
+                        <div>
+                            <div style="color: #64748b; font-size: 11.5px;">Total Yield:</div>
+                            <strong id="diag-total" style="color: #fff;">—</strong>
+                        </div>
+                        <div>
+                            <div style="color: #64748b; font-size: 11.5px;">Device Status:</div>
+                            <strong id="diag-status" style="color: #fff;">—</strong>
+                        </div>
+                        <div>
+                            <div style="color: #64748b; font-size: 11.5px;">Última atualização:</div>
+                            <strong id="diag-lastupdate" style="color: #fff;">—</strong>
+                        </div>
+                        <div>
+                            <div style="color: #64748b; font-size: 11.5px;">Endpoint utilizado:</div>
+                            <span id="diag-endpoints" style="color: #94a3b8; font-size: 11px; word-break: break-all;">/op/v0/device/generation | /op/v0/device/real/query</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

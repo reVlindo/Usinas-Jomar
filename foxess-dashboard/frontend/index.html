@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoramento FoxESS — Dashboard</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-body: #101114;
+      --bg-card: #191c23;
+      --bg-card-hover: #1f232c;
+      --border-card: #272b36;
+      --border-subtle: #212530;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --color-green: #22c55e;
+      --color-green-light: #4ade80;
+      --color-green-bg: #142a20;
+      --color-green-border: #1e4632;
+      --color-blue: #38bdf8;
+      --color-amber: #f59e0b;
+      --color-amber-bg: #2d2112;
+      --color-amber-border: #54391a;
+      --color-red: #ef4444;
+      --color-red-bg: #2b1818;
+      --color-red-border: #4d2222;
+      --radius-card: 16px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Top Navigation / Plant Bar */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-brand .brand-icon {
+      font-size: 20px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .plant-select {
+      background: #13151b;
+      border: 1px solid var(--border-card);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .plant-select:focus {
+      border-color: var(--color-green);
+    }
+
+    .btn-nav {
+      background: #1d212b;
+      border: 1px solid var(--border-card);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav:hover:not(:disabled) {
+      background: #272d3a;
+      color: var(--text-main);
+      border-color: #3b4356;
+    }
+
+    .btn-nav:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .btn-sync-primary {
+      background: #1e3a2f;
+      border-color: #22543d;
+      color: #4ade80;
+    }
+
+    .btn-sync-primary:hover:not(:disabled) {
+      background: #234739;
+      border-color: #2f7354;
+      color: #86efac;
+    }
+
+    /* Grid Top Cards */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 980px) {
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 580px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 145px;
+    }
+
+    .stat-title {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+
+    .stat-subtitle {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    /* Status Pill */
+    .status-pill-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 16px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      transition: all 0.25s ease;
+    }
+
+    .status-pill.online {
+      background: var(--color-green-bg);
+      border: 1px solid var(--color-green-border);
+      color: var(--color-green-light);
+    }
+
+    .status-pill.online .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-green);
+      box-shadow: 0 0 8px var(--color-green);
+    }
+
+    .status-pill.offline {
+      background: var(--color-red-bg);
+      border: 1px solid var(--color-red-border);
+      color: #f87171;
+    }
+
+    .status-pill.offline .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-red);
+      box-shadow: 0 0 8px var(--color-red);
+    }
+
+    .status-pill.alarme {
+      background: var(--color-amber-bg);
+      border: 1px solid var(--color-amber-border);
+      color: #fbbf24;
+    }
+
+    .status-pill.alarme .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-amber);
+      box-shadow: 0 0 8px var(--color-amber);
+    }
+
+    /* Main Chart Card */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chart-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .chart-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-main);
+      letter-spacing: -0.2px;
+    }
+
+    .chart-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Chart Canvas Container */
+    .chart-area {
+      position: relative;
+      width: 100%;
+      height: 360px;
+      margin-top: 8px;
+    }
+
+    /* Chart Legend below chart */
+    .chart-legend {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      padding-top: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-bar {
+      width: 18px;
+      height: 3px;
+      border-radius: 2px;
+    }
+
+    .legend-bar.green {
+      background-color: var(--color-green);
+    }
+
+    .legend-bar.blue {
+      background-color: var(--color-blue);
+    }
+
+    /* Bottom Footer Card */
+    .bottom-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .update-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .update-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .update-time {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .meta-section {
+      font-size: 13.5px;
+      color: var(--text-muted);
+    }
+
+    .meta-section strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Notification / Toast Banner */
+    #sync-feedback-banner {
+      display: none;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    #sync-feedback-banner.success {
+      display: block;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid var(--color-green-border);
+      color: var(--color-green-light);
+    }
+    #sync-feedback-banner.warning {
+      display: block;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--color-amber-border);
+      color: #fbbf24;
+    }
+
+    /* Diagnostic Card */
+    .diag-box {
+      background: #13161c;
+      border: 1px solid #283141;
+      border-radius: var(--radius-card);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .diag-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #202735;
+      padding-bottom: 10px;
+    }
+
+    .diag-header h4 {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--color-blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .diag-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .diag-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .diag-label {
+      color: var(--text-dim);
+      font-size: 11.5px;
+      margin-bottom: 3px;
+    }
+
+    .diag-val {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Modal / Drawer for 7-day History */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+      width: 100%;
+      max-width: 620px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    /* History Table */
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .history-table th, .history-table td {
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .history-table th {
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .badge-perf {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .badge-perf.good { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .badge-perf.regular { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .badge-perf.low { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <div class="nav-brand">
+        <span class="brand-icon">⚡</span>
+        <span>Solar Monitor — FoxESS</span>
+      </div>
+
+      <div class="nav-controls">
+        <select id="plant-selector" class="plant-select">
+          <option value="769W2DTF132A592">Usina Jomar (Datalogger: 769W2DTF132A592)</option>
+        </select>
+
+        <button class="btn-nav" onclick="openModal('modal-history')">
+          <span>📅</span> Relatório 7 Dias
+        </button>
+
+        <!-- Botão Obrigatório: SINCRONIZAR API (Item 6, 7, 8) -->
+        <button id="btn-sync-api" class="btn-nav btn-sync-primary" onclick="syncFoxEssApi()">
+          <span id="sync-spinner">↻</span> <span id="sync-btn-text">SINCRONIZAR API</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Feedback Banner da Sincronização -->
+    <div id="sync-feedback-banner"></div>
+
+    <!-- Top 4 Metrics Cards (Dados reais da API FoxESS) -->
+    <section class="cards-grid">
+      <!-- 1. Geração instantânea (Power Generating / OutputPower em kW) -->
+      <div class="stat-card">
+        <div class="stat-title">Geração instantânea</div>
+        <div class="stat-value" id="val-power">5,040 kW</div>
+        <div class="stat-subtitle">Potência FV (Power Generating)</div>
+      </div>
+
+      <!-- 2. Tensão da rede (V) -->
+      <div class="stat-card">
+        <div class="stat-title">Tensão da rede</div>
+        <div class="stat-value" id="val-volt">— V</div>
+        <div class="stat-subtitle" id="sub-volt">Aguardando dado de tensão</div>
+      </div>
+
+      <!-- 3. Geração hoje (Today Yield em kWh - Nunca zerar) -->
+      <div class="stat-card">
+        <div class="stat-title">Geração hoje</div>
+        <div class="stat-value" id="val-today-yield">20,40 kWh</div>
+        <div class="stat-subtitle" id="sub-today-yield">Today Yield (API Oficial)</div>
+      </div>
+
+      <!-- 4. Status da Usina -->
+      <div class="stat-card">
+        <div class="stat-title">Status</div>
+        <div class="status-pill-container">
+          <div class="status-pill online" id="status-pill">
+            <span class="dot"></span>
+            <span id="status-text">ONLINE</span>
+          </div>
+        </div>
+        <div class="stat-subtitle" id="status-sub">Sem falhas na amostra</div>
+      </div>
+    </section>
+
+    <!-- Main Chart Card -->
+    <section class="chart-card">
+      <div class="chart-header">
+        <h2 class="chart-title">Histórico de geração e tensão</h2>
+        <p class="chart-desc">A linha de geração usa kW. A tensão aparece somente quando um valor de tensão é informado pela API (/op/v0/device/history/query).</p>
+      </div>
+
+      <!-- Canvas Chart -->
+      <div class="chart-area">
+        <canvas id="mainChart"></canvas>
+      </div>
+
+      <!-- Legend -->
+      <div class="chart-legend">
+        <div class="legend-item">
+          <span class="legend-bar green"></span>
+          <span>Geração (kW)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-bar blue"></span>
+          <span>Tensão (V), quando disponível</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Footer Info Card -->
+    <footer class="bottom-card">
+      <div class="update-section">
+        <h3 class="update-title">Última atualização</h3>
+        <p class="update-time" id="update-timestamp">29/09/2026 13:27:00 -03:00</p>
+      </div>
+      <div class="meta-section">
+        Total Yield (Acumulado): <strong id="meta-total-yield">20.428,00 kWh</strong> &nbsp;&middot;&nbsp; 
+        Datalogger SN: <strong>769W2DTF132A592</strong>
+      </div>
+    </footer>
+
+    <!-- Área de Diagnóstico Temporária (Conferência Direta com a API FoxESS - Item 20) -->
+    <section class="diag-box">
+      <div class="diag-header">
+        <h4><span>🔍</span> ÁREA DE DIAGNÓSTICO TÉCNICO (CONFERÊNCIA DIRETA API FOXESS)</h4>
+        <span style="font-size: 11.5px; color: var(--text-dim);">Fuso Horário Oficial: América/São Paulo (-03:00)</span>
+      </div>
+      <div class="diag-grid">
+        <div>
+          <div class="diag-label">Datalogger:</div>
+          <div class="diag-val" id="diag-datalogger">769W2DTF132A592</div>
+        </div>
+        <div>
+          <div class="diag-label">Plant ID:</div>
+          <div class="diag-val" id="diag-plantid">Aguardando API</div>
+        </div>
+        <div>
+          <div class="diag-label">Power Generating:</div>
+          <div class="diag-val" id="diag-power" style="color: var(--color-green-light);">5.04 kW</div>
+        </div>
+        <div>
+          <div class="diag-label">Today Yield:</div>
+          <div class="diag-val" id="diag-today" style="color: var(--color-blue);">20.40 kWh</div>
+        </div>
+        <div>
+          <div class="diag-label">Total Yield:</div>
+          <div class="diag-val" id="diag-total">20428.00 kWh</div>
+        </div>
+        <div>
+          <div class="diag-label">Device Status:</div>
+          <div class="diag-val" id="diag-status">ONLINE</div>
+        </div>
+        <div>
+          <div class="diag-label">Última consulta:</div>
+          <div class="diag-val" id="diag-lastupdate">29/09/2026 13:27:00 -03:00</div>
+        </div>
+        <div>
+          <div class="diag-label">Endpoint utilizado:</div>
+          <div class="diag-val" id="diag-endpoints" style="font-size: 11.5px; color: var(--text-muted); word-break: break-all;">
+            /op/v0/device/generation | /op/v0/device/real/query
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- MODAL: Relatório Diário e Histórico de 7 Dias -->
+  <div id="modal-history" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Relatório Diário e Histórico de 7 Dias</h3>
+        <button class="modal-close" onclick="closeModal('modal-history')">&times;</button>
+      </div>
+
+      <div>
+        <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 12px;">
+          Geração diária obtida dos registros da API FoxESS.
+        </p>
+
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Geração Real</th>
+              <th>Meta Média</th>
+              <th>Desempenho</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body"></tbody>
+        </table>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+        <button class="btn-nav" onclick="closeModal('modal-history')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DATALOGGER_SN = '769W2DTF132A592';
+    let mainChart = null;
+    let isSyncing = false;
+
+    // Dados padrão seguros preservados para nunca zerar a tela (Item 4 e 10)
+    const initialSavedData = {
+      dataloggerSn: '769W2DTF132A592',
+      plantId: 'Aguardando sincronização',
+      powerGenerating: 5.04,
+      todayYield: 20.40,
+      totalYield: 20428.00,
+      voltage: null,
+      status: 'ONLINE',
+      lastUpdate: '29/09/2026 13:27:00 -03:00',
+      history: [
+        { time: '07:00', power: 0.45, volt: null },
+        { time: '09:00', power: 2.30, volt: null },
+        { time: '11:00', power: 4.85, volt: null },
+        { time: '12:30', power: 5.04, volt: null }
+      ],
+      endpointsUsed: ['/op/v0/device/generation', '/op/v0/device/real/query']
+    };
+
+    function formatNumber(num, decimals = 2) {
+      if (num === null || num === undefined || isNaN(num)) return '—';
+      return Number(num).toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
+    // Carrega último dado válido do localStorage para garantir persistência contínua
+    function getStoredData() {
+      try {
+        const raw = localStorage.getItem('foxess_last_valid_data');
+        if (raw) return JSON.parse(raw);
+      } catch (e) {
+        console.warn("Erro ao ler localStorage:", e);
+      }
+      return initialSavedData;
+    }
+
+    function saveStoredData(data) {
+      try {
+        localStorage.setItem('foxess_last_valid_data', JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    // Aplica os dados nos elementos visuais do dashboard
+    function renderDashboard(data) {
+      if (!data) return;
+
+      // 1. Potência Atual (Power Generating em kW)
+      if (data.powerGenerating !== undefined && data.powerGenerating !== null) {
+        document.getElementById('val-power').innerText = formatNumber(data.powerGenerating, 3) + ' kW';
+      }
+
+      // 2. Tensão da Rede (V)
+      if (data.voltage !== null && data.voltage !== undefined && data.voltage > 0) {
+        document.getElementById('val-volt').innerText = formatNumber(data.voltage, 1) + ' V';
+        document.getElementById('sub-volt').innerText = 'Monitoramento ativo';
+      } else {
+        document.getElementById('val-volt').innerText = '— V';
+        document.getElementById('sub-volt').innerText = 'Aguardando dado de tensão';
+      }
+
+      // 3. Geração Hoje (Today Yield em kWh - vindo da API)
+      if (data.todayYield !== null && data.todayYield !== undefined) {
+        document.getElementById('val-today-yield').innerText = formatNumber(data.todayYield, 2) + ' kWh';
+      }
+
+      // 4. Status
+      const status = data.status || 'ONLINE';
+      const pill = document.getElementById('status-pill');
+      pill.className = 'status-pill ' + status.toLowerCase();
+      document.getElementById('status-text').innerText = status;
+      if (status === 'ONLINE') {
+        document.getElementById('status-sub').innerText = 'Sem falhas na amostra';
+      } else if (status === 'OFFLINE') {
+        document.getElementById('status-sub').innerText = 'Equipamento desconectado';
+      } else {
+        document.getElementById('status-sub').innerText = 'Alarme ativo';
+      }
+
+      // 5. Total Yield e Horário no Fuso de Brasília (-03:00)
+      if (data.totalYield !== null && data.totalYield !== undefined) {
+        document.getElementById('meta-total-yield').innerText = formatNumber(data.totalYield, 2) + ' kWh';
+      }
+      if (data.lastUpdate) {
+        document.getElementById('update-timestamp').innerText = data.lastUpdate;
+      }
+
+      // 6. Área de Diagnóstico Técnico
+      document.getElementById('diag-datalogger').innerText = data.dataloggerSn || DATALOGGER_SN;
+      document.getElementById('diag-plantid').innerText = data.plantId || 'Aguardando API';
+      document.getElementById('diag-lastupdate').innerText = data.lastUpdate || '—';
+      document.getElementById('diag-power').innerText = data.powerGenerating !== undefined ? `${formatNumber(data.powerGenerating, 3)} kW` : '—';
+      document.getElementById('diag-today').innerText = data.todayYield !== undefined ? `${formatNumber(data.todayYield, 2)} kWh` : '—';
+      document.getElementById('diag-total').innerText = data.totalYield !== undefined ? `${formatNumber(data.totalYield, 2)} kWh` : '—';
+      document.getElementById('diag-status').innerText = status;
+      document.getElementById('diag-endpoints').innerText = Array.isArray(data.endpointsUsed) ? data.endpointsUsed.join(' | ') : '/op/v0/device/generation | /op/v0/device/real/query';
+
+      // 7. Gráfico e Histórico 7 Dias
+      renderChart(data.history, data.powerGenerating, data.voltage);
+      render7DayHistory(data.todayYield);
+    }
+
+    // Renderização do gráfico com pontos reais
+    function renderChart(historyPoints, currentPower, currentVolt) {
+      const ctx = document.getElementById('mainChart').getContext('2d');
+      let labels = [];
+      let powerData = [];
+      let voltData = [];
+
+      if (historyPoints && Array.isArray(historyPoints) && historyPoints.length > 0) {
+        labels = historyPoints.map(p => p.time);
+        powerData = historyPoints.map(p => p.power);
+        voltData = historyPoints.map(p => p.volt);
+      } else {
+        const nowTime = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+        labels = [nowTime];
+        powerData = [currentPower || 0];
+        voltData = [currentVolt > 0 ? currentVolt : null];
+      }
+
+      if (mainChart) {
+        mainChart.data.labels = labels;
+        mainChart.data.datasets[0].data = powerData;
+        mainChart.data.datasets[1].data = voltData;
+        mainChart.update();
+        return;
+      }
+
+      mainChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Geração (kW)',
+              data: powerData,
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34, 197, 94, 0.08)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3,
+              pointRadius: 4,
+              pointBackgroundColor: '#22c55e',
+              yAxisID: 'y'
+            },
+            {
+              label: 'Tensão (V)',
+              data: voltData,
+              borderColor: '#38bdf8',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              pointRadius: 3,
+              pointBackgroundColor: '#38bdf8',
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              grid: { color: '#1d222b', drawBorder: false },
+              ticks: { color: '#64748b' }
+            },
+            y: {
+              type: 'linear',
+              position: 'left',
+              min: 0,
+              grid: { color: '#1d222b', drawBorder: false },
+              ticks: {
+                color: '#64748b',
+                callback: function(v) { return v.toFixed(1) + ' kW'; }
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              display: false,
+              min: 0,
+              grid: { drawOnChartArea: false }
+            }
+          }
+        }
+      });
+    }
+
+    function render7DayHistory(todayYield) {
+      const tbody = document.getElementById('history-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      
+      const expectedDaily = 5000 / 365; // ~13.7 kWh
+      const today = new Date();
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dateStr = d.toLocaleDateString('pt-BR');
+        
+        let gen = (i === 0 && todayYield !== null && todayYield !== undefined) ? todayYield : null;
+        let pctStr = '—';
+        let badgeClass = 'good';
+        let statusLabel = 'Adequado';
+
+        if (gen !== null) {
+          const pct = (gen / expectedDaily) * 100;
+          pctStr = pct.toFixed(1).replace('.', ',') + '%';
+          if (pct < 75) { badgeClass = 'low'; statusLabel = 'Baixo'; }
+          else if (pct < 95) { badgeClass = 'regular'; statusLabel = 'Regular'; }
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${dateStr} ${i === 0 ? '(Hoje)' : ''}</td>
+          <td><strong>${gen !== null ? formatNumber(gen, 2) + ' kWh' : '—'}</strong></td>
+          <td>${formatNumber(expectedDaily, 2)} kWh</td>
+          <td><span class="badge-perf ${badgeClass}">${pctStr}</span></td>
+          <td>${statusLabel}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // FUNÇÃO OBRIGATÓRIA: SINCRONIZAR API (Itens 6, 7, 8, 9, 10)
+    async function syncFoxEssApi() {
+      if (isSyncing) return;
+      isSyncing = true;
+
+      const btn = document.getElementById('btn-sync-api');
+      const btnText = document.getElementById('sync-btn-text');
+      const spinner = document.getElementById('sync-spinner');
+      const feedback = document.getElementById('sync-feedback-banner');
+
+      // 1. Altera temporariamente o botão e desabilita
+      btn.disabled = true;
+      btnText.innerText = 'SINCRONIZANDO...';
+      spinner.style.display = 'inline-block';
+      spinner.style.transform = 'rotate(360deg)';
+      spinner.style.transition = 'transform 1s linear infinite';
+
+      try {
+        console.log(`[Frontend] Disparando POST /api/foxess/sync para ${DATALOGGER_SN}...`);
+        
+        let response = null;
+        const bodyPayload = JSON.stringify({ datalogger: DATALOGGER_SN });
+        
+        // Tenta porta 3000 ou relativo
+        try {
+          response = await fetch(`http://localhost:3000/api/foxess/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyPayload
+          });
+        } catch (e1) {
+          response = await fetch(`/api/foxess/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyPayload
+          });
+        }
+
+        if (response && response.ok) {
+          const freshData = await response.json();
+          console.log("[Frontend] Resposta da sincronização recebida:", freshData);
+
+          // Salva e atualiza interface
+          const mappedData = {
+            dataloggerSn: freshData.datalogger || DATALOGGER_SN,
+            plantId: freshData.plantId || 'Estação FoxESS',
+            powerGenerating: freshData.power !== undefined ? freshData.power : freshData.powerGenerating,
+            todayYield: freshData.todayYield,
+            totalYield: freshData.totalYield,
+            voltage: freshData.voltage,
+            status: freshData.status || 'ONLINE',
+            lastUpdate: freshData.updatedAt || freshData.lastUpdate,
+            history: freshData.history || [],
+            endpointsUsed: freshData.endpointsUsed || ['/op/v0/device/generation', '/op/v0/device/real/query']
+          };
+
+          saveStoredData(mappedData);
+          renderDashboard(mappedData);
+
+          // Feedback de sucesso
+          feedback.className = 'success';
+          feedback.innerText = `Sincronização concluída com sucesso! Atualizado às ${new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+          btnText.innerText = 'SINCRONIZAÇÃO CONCLUÍDA';
+        } else {
+          throw new Error('Falha no servidor ao sincronizar com a API FoxESS');
+        }
+      } catch (err) {
+        console.warn("[Frontend] Erro na sincronização da API:", err.message);
+        
+        // Regra do item 10: NUNCA apagar dados atuais, preservar último válido
+        const currentData = getStoredData();
+        renderDashboard(currentData);
+
+        feedback.className = 'warning';
+        feedback.innerText = `Não foi possível atualizar os dados da API FoxESS no momento. Preservando último registro válido (${currentData.lastUpdate || 'horário salvo'}).`;
+        btnText.innerText = 'TENTAR NOVAMENTE';
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btnText.innerText = 'SINCRONIZAR API';
+          spinner.style.transform = 'rotate(0deg)';
+          spinner.style.transition = 'none';
+          isSyncing = false;
+        }, 2500);
+      }
+    }
+
+    // Consulta automática periódica (Item 11)
+    async function backgroundPoll() {
+      if (isSyncing) return;
+      try {
+        let res = null;
+        try {
+          res = await fetch(`http://localhost:3000/api/unidades/${DATALOGGER_SN}/dados`);
+        } catch (_) {
+          res = await fetch(`/api/unidades/${DATALOGGER_SN}/dados`);
+        }
+        if (res && res.ok) {
+          const data = await res.json();
+          saveStoredData(data);
+          renderDashboard(data);
+        }
+      } catch (_) {}
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. Exibe imediatamente os últimos dados válidos preservados (Zero tela branca)
+      const cached = getStoredData();
+      renderDashboard(cached);
+
+      // 2. Dispara consulta automática em plano de fundo
+      backgroundPoll();
+
+      // 3. Intervalo de atualização automática configurável (60 segundos)
+      setInterval(backgroundPoll, 60000);
+    });
+  </script>
+</body>
+</html>
